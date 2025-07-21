@@ -100,6 +100,7 @@ const Terminal = ({ isOpen }) => {
                 height: "100%",
                 width: "100%",
                 padding: "10px",
+                paddingBottom: "20px",
                 boxSizing: 'border-box',
                 backgroundColor: draculaTheme.background,
                 overflow: "hidden",

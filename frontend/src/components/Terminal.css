@@ -1,6 +1,19 @@
 /* 覆盖 xterm.js 的默认滚动条样式，只在需要时显示滚动条 */
 .xterm-viewport {
-  overflow-y: auto !important;
+  overflow-y: overlay !important;
+}
+.xterm-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+.xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 
 /* Nerd Font 字体，可以显示图标 */

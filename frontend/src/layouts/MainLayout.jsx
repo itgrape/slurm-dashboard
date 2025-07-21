@@ -250,13 +250,12 @@ function MainLayout() {
                 }}
                 PaperProps={{
                     sx: {
-                        height: "65vh",
+                        height: "69vh",
                         width: "100%",
                         overflow: "hidden",
                     },
                 }}
             >
-                {/* 直接渲染 Terminal，并传入 isOpen 状态 */}
                 <Terminal isOpen={isTerminalOpen} />
             </Drawer>
         </Box>
