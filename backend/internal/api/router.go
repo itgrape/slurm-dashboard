@@ -30,8 +30,9 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore) *gin.Engine {
 		}
 	})
 
-	// 公开的登录路由
+	// 公开的路由
 	router.POST("/api/login", LoginHandler(cfg, tokenStore))
+	router.GET("/api/v1/shell", ShellHandler(cfg))
 
 	// 受保护的API v1路由组
 	apiV1 := router.Group("/api/v1")

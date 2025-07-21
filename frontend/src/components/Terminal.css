@@ -1,0 +1,10 @@
+/* 覆盖 xterm.js 的默认滚动条样式，只在需要时显示滚动条 */
+.xterm-viewport {
+  overflow-y: auto !important;
+}
+
+/* Nerd Font 字体，可以显示图标 */
+@font-face {
+    font-family: 'FiraCode Nerd Font';
+    src: url('/fonts/FiraCodeNerdFont-Regular.ttf');
+}
