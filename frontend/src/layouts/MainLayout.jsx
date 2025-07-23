@@ -18,6 +18,7 @@ import {
     Menu,
     MenuItem,
     Tooltip,
+    Collapse,
 } from "@mui/material";
 import {
     Menu as MenuIcon,
@@ -30,31 +31,35 @@ import {
     Code as CodeIcon,
     School as SchoolIcon,
     Terminal as TerminalIcon,
+    ExpandLess as ExpandLessIcon,
+    ExpandMore as ExpandMoreIcon,
+    CloudUpload as CloudUploadIcon,
+    PlayCircleOutline as PlayCircleOutlineIcon,
+    BatchPrediction as BatchPredictionIcon,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import { Link } from "react-router-dom";
 import Terminal from "../components/Terminal";
 
 const drawerWidth = 240;
+const iconTextDistance = 40;
 
-const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
-    ({ theme, open }) => ({
-        flexGrow: 1,
-        padding: theme.spacing(3),
+const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(({ theme, open }) => ({
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create("margin", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: `-${drawerWidth}px`,
+    ...(open && {
         transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen,
         }),
-        marginLeft: `-${drawerWidth}px`,
-        ...(open && {
-            transition: theme.transitions.create("margin", {
-                easing: theme.transitions.easing.easeOut,
-                duration: theme.transitions.duration.enteringScreen,
-            }),
-            marginLeft: 0,
-        }),
-    })
-);
+        marginLeft: 0,
+    }),
+}));
 
 const AppBarStyled = styled(AppBar, {
     shouldForwardProp: (prop) => prop !== "open",
@@ -83,9 +88,17 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 }));
 
 const menuItems = [
-    { text: "仪表盘", icon: <DashboardIcon />, path: "/" },
+    { text: "集群资源", icon: <DashboardIcon />, path: "/" },
     { text: "作业管理", icon: <AssessmentIcon />, path: "/jobs" },
-    { text: "脚本生成", icon: <CodeIcon />, path: "/script-generator" },
+    {
+        text: "作业提交",
+        icon: <CloudUploadIcon />,
+        items: [
+            { text: "交互式作业", icon: <PlayCircleOutlineIcon />, path: "/job-debug" },
+            { text: "批处理作业", icon: <BatchPredictionIcon />, path: "/job-batch" },
+            { text: "脚本生成", icon: <CodeIcon />, path: "/script-generator" },
+        ],
+    },
     { text: "使用教程", icon: <SchoolIcon />, path: "/tutorial" },
 ];
 
@@ -94,6 +107,7 @@ function MainLayout() {
     const [open, setOpen] = useState(true);
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+    const [subMenuOpen, setSubMenuOpen] = useState(true);
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -120,6 +134,10 @@ function MainLayout() {
         setIsTerminalOpen(!isTerminalOpen);
     };
 
+    const handleSubMenuClick = () => {
+        setSubMenuOpen(!subMenuOpen);
+    };
+
     return (
         <Box sx={{ display: "flex" }}>
             <AppBarStyled position="fixed" open={open}>
@@ -133,19 +151,11 @@ function MainLayout() {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        component="div"
-                        sx={{ flexGrow: 1 }}
-                    ></Typography>
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}></Typography>
 
                     {/* Terminal Icon */}
                     <Tooltip title="打开终端">
-                        <IconButton
-                            color="inherit"
-                            onClick={handleToggleTerminal}
-                        >
+                        <IconButton color="inherit" onClick={handleToggleTerminal}>
                             <TerminalIcon />
                         </IconButton>
                     </Tooltip>
@@ -153,14 +163,9 @@ function MainLayout() {
                     {/* 用户菜单 */}
                     <Box sx={{ flexGrow: 0, ml: 2 }}>
                         <Tooltip title="打开设置">
-                            <IconButton
-                                onClick={handleOpenUserMenu}
-                                sx={{ p: 0 }}
-                            >
+                            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                                 <Avatar sx={{ bgcolor: "secondary.main" }}>
-                                    {user?.name?.charAt(0) ||
-                                        user?.username?.charAt(0) ||
-                                        "U"}
+                                    {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
                                 </Avatar>
                             </IconButton>
                         </Tooltip>
@@ -181,18 +186,14 @@ function MainLayout() {
                             onClose={handleCloseUserMenu}
                         >
                             <MenuItem disabled>
-                                <Typography textAlign="center">
-                                    {user?.name || user?.username}
-                                </Typography>
+                                <Typography textAlign="center">{user?.name || user?.username}</Typography>
                             </MenuItem>
                             <Divider />
                             <MenuItem onClick={handleLogout}>
                                 <ListItemIcon>
                                     <LogoutIcon fontSize="small" />
                                 </ListItemIcon>
-                                <Typography textAlign="center">
-                                    退出登录
-                                </Typography>
+                                <Typography textAlign="center">退出登录</Typography>
                             </MenuItem>
                         </Menu>
                     </Box>
@@ -221,20 +222,50 @@ function MainLayout() {
                 </DrawerHeader>
                 <Divider />
                 <List>
-                    {menuItems.map((item) => (
-                        <ListItem
-                            key={item.text}
-                            disablePadding
-                            component={Link}
-                            to={item.path}
-                            sx={{ color: "inherit", textDecoration: "none" }}
-                        >
-                            <ListItemButton>
-                                <ListItemIcon>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.text} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                    {menuItems.map((item, index) =>
+                        item.items ? (
+                            <div key={item.text}>
+                                <ListItemButton onClick={handleSubMenuClick}>
+                                    <ListItemIcon sx={{ minWidth: iconTextDistance }}>{item.icon}</ListItemIcon>
+                                    <ListItemText primary={item.text} />
+                                    {subMenuOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                </ListItemButton>
+                                <Collapse in={subMenuOpen} timeout="auto" unmountOnExit>
+                                    <List component="div" disablePadding>
+                                        {item.items.map((subItem) => (
+                                            <ListItem
+                                                key={subItem.text}
+                                                disablePadding
+                                                component={Link}
+                                                to={subItem.path}
+                                                sx={{ color: "inherit", textDecoration: "none", pl: 4 }}
+                                            >
+                                                <ListItemButton>
+                                                    <ListItemIcon sx={{ minWidth: iconTextDistance }}>
+                                                        {subItem.icon}
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={subItem.text} />
+                                                </ListItemButton>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Collapse>
+                            </div>
+                        ) : (
+                            <ListItem
+                                key={item.text}
+                                disablePadding
+                                component={Link}
+                                to={item.path}
+                                sx={{ color: "inherit", textDecoration: "none" }}
+                            >
+                                <ListItemButton>
+                                    <ListItemIcon sx={{ minWidth: iconTextDistance }}>{item.icon}</ListItemIcon>
+                                    <ListItemText primary={item.text} />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    )}
                 </List>
             </Drawer>
             <Main open={open}>

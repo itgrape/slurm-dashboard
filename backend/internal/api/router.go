@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(cfg *config.Config, tokenStore *store.TokenStore) *gin.Engine {
+func NewRouter(cfg *config.Config, tokenStore *store.TokenStore, sessionStore *store.SessionStore) *gin.Engine {
 	router := gin.Default()
 
 	// CORS 配置
@@ -32,7 +32,10 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore) *gin.Engine {
 
 	// 公开的路由
 	router.POST("/api/login", LoginHandler(cfg, tokenStore))
+
+	// 独立认证的路由
 	router.GET("/api/v1/shell", ShellHandler(cfg))
+	router.GET("/api/v1/salloc/interactive/:session_id/attach", HandleAttachSallocSession(cfg, sessionStore))
 
 	// 受保护的API v1路由组
 	apiV1 := router.Group("/api/v1")
@@ -46,6 +49,8 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore) *gin.Engine {
 			jobGroup.POST("/allocate", AllocateJobHandler(cfg, tokenStore))
 			jobGroup.DELETE("/:job_id", HandleDeleteJob(cfg, tokenStore))
 		}
+
+		apiV1.POST("/salloc/interactive", HandleCreateSallocSession(cfg, sessionStore))
 	}
 
 	return router

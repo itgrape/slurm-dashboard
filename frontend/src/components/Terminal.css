@@ -1,7 +1,4 @@
 /* 覆盖 xterm.js 的默认滚动条样式，只在需要时显示滚动条 */
-.xterm-viewport {
-  overflow-y: overlay !important;
-}
 .xterm-viewport::-webkit-scrollbar {
   width: 6px;
 }

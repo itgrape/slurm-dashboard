@@ -11,11 +11,12 @@ func main() {
 	// 1. 加载配置
 	cfg := config.LoadConfig()
 
-	// 2. 初始化Token存储
+	// 2. 初始化存储
 	tokenStore := store.NewTokenStore()
+	sessionStore := store.NewSessionStore()
 
 	// 3. 初始化路由
-	router := api.NewRouter(cfg, tokenStore)
+	router := api.NewRouter(cfg, tokenStore, sessionStore)
 
 	// 4. 启动服务
 	log.Println("Go backend server is running on :" + cfg.ServerPort)

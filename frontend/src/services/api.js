@@ -80,13 +80,24 @@ const apiService = {
         }
     },
 
-    // 删除作业 (新增)
+    // 删除作业
     deleteJob: async (jobId) => {
         try {
             const response = await api.delete(`/v1/job/${jobId}`);
             return response;
         } catch (error) {
             console.error(`删除作业 ${jobId} 失败:`, error);
+            throw error;
+        }
+    },
+
+    // 创建 salloc 交互式会话
+    createSallocSession: async (payload) => {
+        try {
+            const response = await api.post("/v1/salloc/interactive", payload);
+            return response;
+        } catch (error) {
+            console.error("创建 salloc 会话失败:", error);
             throw error;
         }
     },

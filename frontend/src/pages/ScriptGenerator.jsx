@@ -70,7 +70,7 @@ function ScriptGenerator() {
     // 根据表单数据生成脚本
     useEffect(() => {
         const generateSallocScript = () => {
-            let script = "salloc --no-shell";
+            let script = "salloc";
             if (formData.jobName) script += ` --job-name=${formData.jobName}`;
             if (formData.partition)
                 script += ` --partition=${formData.partition}`;
