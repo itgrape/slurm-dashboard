@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"os/user"
 	"strconv"
@@ -21,6 +22,14 @@ func ExecuteCommandAsUser(username string, command string) (string, error) {
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+
+	cmd.Env = []string{
+		"TERM=xterm",
+		fmt.Sprintf("HOME=%s", osUser.HomeDir),
+		fmt.Sprintf("USER=%s", username),
+		fmt.Sprintf("LOGNAME=%s", username),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+	}
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

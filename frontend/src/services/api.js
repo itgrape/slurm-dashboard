@@ -101,6 +101,17 @@ const apiService = {
             throw error;
         }
     },
+
+    // 提交 sbatch 作业
+    submitSbatchJob: async (scriptContent) => {
+        try {
+            const response = await api.post("/v1/sbatch", { script: scriptContent });
+            return response;
+        } catch (error) {
+            console.error("提交 sbatch 作业失败:", error);
+            throw error;
+        }
+    },
 };
 
 export default apiService;

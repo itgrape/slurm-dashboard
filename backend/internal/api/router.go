@@ -51,6 +51,7 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore, sessionStore *s
 		}
 
 		apiV1.POST("/salloc/interactive", HandleCreateSallocSession(cfg, sessionStore))
+		apiV1.POST("/sbatch", SbatchSubmitHandler(cfg, tokenStore))
 	}
 
 	return router
