@@ -69,13 +69,35 @@ const apiService = {
         }
     },
 
+    // 按条件查询所有作业
     getJobs: async (params) => {
-        // 接受查询参数
         try {
             const response = await api.get("/v1/jobs", { params });
             return response;
         } catch (error) {
             console.error("获取作业列表失败:", error);
+            throw error;
+        }
+    },
+
+    // 获取作业详情
+    getJobDetails: async (jobId) => {
+        try {
+            const response = await api.get(`/v1/job/${jobId}`);
+            return response;
+        } catch (error) {
+            console.error(`获取作业 ${jobId} 详情失败:`, error);
+            throw error;
+        }
+    },
+
+    // 获取作业连接信息
+    getJobConnectInfo: async (jobId) => {
+        try {
+            const response = await api.get(`/v1/job/connect/${jobId}`);
+            return response;
+        } catch (error) {
+            console.error(`获取作业 ${jobId} 连接信息失败:`, error);
             throw error;
         }
     },

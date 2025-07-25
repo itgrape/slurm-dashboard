@@ -72,6 +72,8 @@ function Jobs() {
 
     const [deleteCandidate, setDeleteCandidate] = useState(null);
     const [selectedJob, setSelectedJob] = useState(null);
+    const [connectInfo, setConnectInfo] = useState(null);
+    const [detailLoading, setDetailLoading] = useState(false);
 
     // 获取作业列表
     const fetchJobs = useCallback(async () => {
@@ -123,15 +125,32 @@ function Jobs() {
     };
 
     // 处理行点击事件，打开详情弹窗
-    const handleRowClick = (job) => {
+    const handleRowClick = async (job, event) => {
         // 避免在点击删除按钮时触发
         if (event.target.closest("button")) return;
+
         setSelectedJob(job);
+        setDetailLoading(true);
+        setConnectInfo(null); // 清空旧的连接信息
+        setError(null); // 清空旧的错误
+
+        try {
+            const connectionResponse = await apiService.getJobConnectInfo(job.job_id);
+            if (connectionResponse && connectionResponse.content) {
+                setConnectInfo(connectionResponse.content);
+            }
+        } catch (err) {
+            setError("无法加载作业连接信息。");
+            console.error(err);
+        } finally {
+            setDetailLoading(false);
+        }
     };
 
     // 关闭详情弹窗
     const handleCloseDetailView = () => {
         setSelectedJob(null);
+        setConnectInfo(null);
     };
 
     return (
@@ -209,7 +228,7 @@ function Jobs() {
                                     <TableRow
                                         hover
                                         key={job.job_id}
-                                        onClick={() => handleRowClick(job)}
+                                        onClick={(event) => handleRowClick(job, event)}
                                         sx={{ cursor: "pointer" }}
                                     >
                                         <TableCell align="center">{job.job_id}</TableCell>
@@ -231,7 +250,10 @@ function Jobs() {
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={() => handleDeleteClick(job.job_id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteClick(job.job_id);
+                                                        }}
                                                     >
                                                         <DeleteIcon />
                                                     </IconButton>
@@ -275,35 +297,79 @@ function Jobs() {
             </Dialog>
 
             {/* 作业详情弹窗 */}
-            <Dialog open={!!selectedJob} onClose={handleCloseDetailView} maxWidth="sm" fullWidth>
-                <DialogTitle>作业资源详情 (ID: {selectedJob?.job_id})</DialogTitle>
+            <Dialog open={!!selectedJob} onClose={handleCloseDetailView} maxWidth="md" fullWidth>
+                <DialogTitle>作业详情 (ID: {selectedJob?.job_id})</DialogTitle>
                 <DialogContent>
                     {selectedJob && (
-                        <Box>
-                            <Typography variant="subtitle1" gutterBottom>
-                                <strong>TRES 资源:</strong>
-                            </Typography>
-                            <Paper variant="outlined" sx={{ p: 2, mb: 2, background: "#f5f5f5" }}>
-                                <Typography component="pre" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                                    {selectedJob.tres_req_str}
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    资源详情
                                 </Typography>
-                            </Paper>
-
-                            <Typography variant="subtitle1" gutterBottom>
-                                <strong>GRES 资源:</strong>
-                            </Typography>
-                            <Paper variant="outlined" sx={{ p: 2, background: "#f5f5f5" }}>
-                                {selectedJob.gres_detail?.length > 0 ? (
-                                    selectedJob.gres_detail.map((detail, index) => (
-                                        <Typography key={index} component="div">
-                                            {detail}
+                                <Paper variant="outlined" sx={{ p: 2, background: "#f5f5f5" }}>
+                                    <Typography variant="body1" sx={{ mb: 1 }}>
+                                        <strong>通用资源:</strong>
+                                    </Typography>
+                                    <Typography
+                                        component="pre"
+                                        sx={{
+                                            whiteSpace: "pre-wrap",
+                                            wordBreak: "break-all",
+                                            background: "#e0e0e0",
+                                            p: 1,
+                                            borderRadius: 1,
+                                            mb: 2,
+                                        }}
+                                    >
+                                        {selectedJob.tres_req_str}
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ mb: 1 }}>
+                                        <strong>GPU 信息:</strong>
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            background: "#e0e0e0",
+                                            p: 1,
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        {selectedJob.gres_detail?.length > 0 ? (
+                                            selectedJob.gres_detail.map((detail, index) => (
+                                                <Typography key={index} component="div">
+                                                    {detail}
+                                                </Typography>
+                                            ))
+                                        ) : (
+                                            <Typography>无</Typography>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    连接方式
+                                </Typography>
+                                <Paper variant="outlined" sx={{ p: 2, background: "#2d2d2d", color: "#f5f5f5" }}>
+                                    {detailLoading ? (
+                                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                                            <CircularProgress color="inherit" size={24} />
+                                            <Typography sx={{ ml: 2 }}>正在加载连接信息...</Typography>
+                                        </Box>
+                                    ) : (
+                                        <Typography
+                                            component="pre"
+                                            sx={{
+                                                whiteSpace: "pre-wrap",
+                                                wordBreak: "break-all",
+                                                fontFamily: "monospace",
+                                            }}
+                                        >
+                                            {connectInfo || "无可用连接信息。"}
                                         </Typography>
-                                    ))
-                                ) : (
-                                    <Typography>无</Typography>
-                                )}
-                            </Paper>
-                        </Box>
+                                    )}
+                                </Paper>
+                            </Grid>
+                        </Grid>
                     )}
                 </DialogContent>
                 <DialogActions>

@@ -47,7 +47,9 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore, sessionStore *s
 		{
 			jobGroup.POST("/submit", SubmitJobHandler(cfg, tokenStore))
 			jobGroup.POST("/allocate", AllocateJobHandler(cfg, tokenStore))
+			jobGroup.GET("/:job_id", HandleGetJobByID(cfg, tokenStore))
 			jobGroup.DELETE("/:job_id", HandleDeleteJob(cfg, tokenStore))
+			jobGroup.GET("/connect/:job_id", HandleGetJobConnectLog(cfg, tokenStore))
 		}
 
 		apiV1.POST("/salloc/interactive", HandleCreateSallocSession(cfg, sessionStore))

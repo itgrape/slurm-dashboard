@@ -7,6 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/user"
+	"path/filepath"
 	"time"
 
 	"slurm-dashboard/config"
@@ -102,6 +105,60 @@ func GetJobsHandler(cfg *config.Config, tokenStore *store.TokenStore) gin.Handle
 	}
 }
 
+// HandleGetJobByID 负责根据作业ID获取单个作业的详细信息
+func HandleGetJobByID(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 1. 身份验证和Token获取
+		username, _ := c.Get("username")
+		slurmToken, ok := tokenStore.Get(username.(string))
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Slurm session not found"})
+			return
+		}
+
+		// 2. 从URL路径中获取 job_id 并验证
+		jobId := c.Param("job_id")
+		if jobId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Job ID is required"})
+			return
+		}
+		log.Printf("Received get job request for job %s by user %s", jobId, username)
+
+		// 3. 将请求代理到真正的Slurm API
+		client := &http.Client{Timeout: 30 * time.Second}
+		targetURL := fmt.Sprintf("%s/slurm/v0.0.42/job/%s", cfg.SlurmAPIHost, jobId)
+
+		// 创建一个新的GET请求
+		req, err := http.NewRequest("GET", targetURL, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create get job request"})
+			return
+		}
+
+		// 4. 设置必要的Header
+		req.Header.Set("X-SLURM-USER-NAME", username.(string))
+		req.Header.Set("X-SLURM-USER-TOKEN", slurmToken)
+		req.Header.Set("Accept", "application/json")
+
+		// 5. 发送请求并代理响应
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to reach Slurm API for getting job"})
+			return
+		}
+		defer resp.Body.Close()
+
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response from Slurm API"})
+			return
+		}
+
+		// 将Slurm API的响应状态码和响应体原样返回给前端
+		c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), responseBody)
+	}
+}
+
 // HandleDeleteJob 负责处理取消作业的DELETE请求
 func HandleDeleteJob(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -154,6 +211,56 @@ func HandleDeleteJob(cfg *config.Config, tokenStore *store.TokenStore) gin.Handl
 
 		// 将Slurm API的响应状态码和响应体原样返回给前端
 		c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), responseBody)
+	}
+}
+
+// HandleGetJobConnectLog 读取并返回用户家目录下特定作业的连接日志
+func HandleGetJobConnectLog(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 1. 从 context 获取已认证的用户名
+		username, exists := c.Get("username")
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Username not found in context"})
+			return
+		}
+
+		// 2. 从URL路径中获取 job_id 并验证
+		jobId := c.Param("job_id")
+		if jobId == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Job ID is required"})
+			return
+		}
+
+		// 3. 查找用户的家目录
+		osUser, err := user.Lookup(username.(string))
+		if err != nil {
+			log.Printf("Failed to lookup user '%s': %v", username, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not find user on the server"})
+			return
+		}
+		homeDir := osUser.HomeDir
+
+		// 4. 构造完整的文件路径
+		fileName := fmt.Sprintf(cfg.JobConnectLogPattern, jobId)
+		filePath := filepath.Join(homeDir, fileName)
+		log.Printf("Attempting to read log file for user %s: %s", username, filePath)
+
+		// 5. 读取文件内容
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			// 如果文件不存在，返回 404 Not Found
+			if os.IsNotExist(err) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Log file not found"})
+				return
+			}
+			// 其他错误（如权限问题），返回 500 Internal Server Error
+			log.Printf("Failed to read file %s: %v", filePath, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read log file"})
+			return
+		}
+
+		// 6. 成功读取，将文件内容返回
+		c.JSON(http.StatusOK, gin.H{"content": string(content)})
 	}
 }
 

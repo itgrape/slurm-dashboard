@@ -15,6 +15,7 @@ type Config struct {
 	JWTDuration           time.Duration
 	SlurmTokenLifespanSec string
 	ServerPort            string
+	JobConnectLogPattern  string
 }
 
 // LoadConfig 加载并返回所有配置
@@ -33,6 +34,8 @@ func LoadConfig() *Config {
 
 		SlurmAPIHost:          "http://10.20.20.2:6820",
 		SlurmTokenLifespanSec: "90000", // 25h
+
+		JobConnectLogPattern: ".slurm/connect-%s.log",
 
 		ServerPort: "80",
 	}
