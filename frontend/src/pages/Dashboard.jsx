@@ -16,6 +16,9 @@ import DnsIcon from "@mui/icons-material/Dns";
 import MemoryIcon from "@mui/icons-material/Memory";
 import apiService from "../services/api";
 
+// 设置主页不应显示的节点
+const FILTERED_NODES = ['login', 'portal', 'app']
+
 // 根据节点状态返回不同的颜色
 const getNodeStateColor = (state) => {
   if (state.includes("ALLOCATED")) return "error";
@@ -69,20 +72,17 @@ function Dashboard() {
   useEffect(() => {
     const fetchClusterStatus = async () => {
       try {
-        const data = await apiService.getClusterStatus();
-
-        // --- 数据过滤逻辑 ---
-        const filteredPartitions = data.partitions.filter(
-          (p) => p.name !== "login"
-        );
-        const filteredNodes = data.nodes.filter(
-          (node) =>
-            !(node.partitions.length === 1 && node.partitions[0] === "login")
+          const data = await apiService.getClusterStatus();
+          
+          // --- 数据过滤逻辑 ---
+          const filteredNodes = data.nodes.filter(
+            (node) => !FILTERED_NODES.some(
+              (filterWord) => String(node.name).toLowerCase().includes(filterWord)
+            )
         );
 
         setClusterStatus({
           ...data,
-          partitions: filteredPartitions,
           nodes: filteredNodes,
         });
       } catch (err) {
