@@ -7,28 +7,27 @@ import "./Terminal.css";
 
 // Dracula 德古拉主题颜色
 const draculaTheme = {
-    background: '#282a36',
-    foreground: '#f8f8f2',
-    cursor: '#f8f8f2',
-    selectionBackground: '#44475a',
-    black: '#000000',
-    brightBlack: '#44475a',
-    red: '#ff5555',
-    brightRed: '#ff5555',
-    green: '#50fa7b',
-    brightGreen: '#50fa7b',
-    yellow: '#f1fa8c',
-    brightYellow: '#f1fa8c',
-    blue: '#bd93f9',
-    brightBlue: '#bd93f9',
-    magenta: '#ff79c6',
-    brightMagenta: '#ff79c6',
-    cyan: '#8be9fd',
-    brightCyan: '#8be9fd',
-    white: '#f8f8f2',
-    brightWhite: '#ffffff',
+    background: "#282a36",
+    foreground: "#f8f8f2",
+    cursor: "#f8f8f2",
+    selectionBackground: "#44475a",
+    black: "#000000",
+    brightBlack: "#44475a",
+    red: "#ff5555",
+    brightRed: "#ff5555",
+    green: "#50fa7b",
+    brightGreen: "#50fa7b",
+    yellow: "#f1fa8c",
+    brightYellow: "#f1fa8c",
+    blue: "#bd93f9",
+    brightBlue: "#bd93f9",
+    magenta: "#ff79c6",
+    brightMagenta: "#ff79c6",
+    cyan: "#8be9fd",
+    brightCyan: "#8be9fd",
+    white: "#f8f8f2",
+    brightWhite: "#ffffff",
 };
-
 
 const Terminal = ({ isOpen }) => {
     const terminalRef = useRef(null);
@@ -44,16 +43,17 @@ const Terminal = ({ isOpen }) => {
 
         const term = new XTerm({
             // 字体
-            fontFamily: '"FiraCode Nerd Font", "Fira Code", "JetBrains Mono", Menlo, Consolas, "Courier New", monospace',
+            fontFamily:
+                '"FiraCode Nerd Font", "Fira Code", "JetBrains Mono", Menlo, Consolas, "Courier New", monospace',
             fontSize: 14,
             lineHeight: 1.2,
-            
+
             // 主题
             theme: draculaTheme,
 
             // 光标
             cursorBlink: true,
-            cursorStyle: 'block', // 'block', 'underline', 'bar'
+            cursorStyle: "block", // 'block', 'underline', 'bar'
 
             // 其他视觉效果
             convertEol: true, // 启用时，光标将设置为下一行的开头
@@ -101,7 +101,7 @@ const Terminal = ({ isOpen }) => {
                 width: "100%",
                 padding: "6px",
                 paddingBottom: "10px",
-                boxSizing: 'border-box',
+                boxSizing: "border-box",
                 backgroundColor: draculaTheme.background,
                 overflow: "hidden",
             }}

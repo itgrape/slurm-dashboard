@@ -17,26 +17,26 @@ import "./index.css";
 
 // 创建主题
 const theme = createTheme({
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#1976d2",
+    palette: {
+        mode: "light",
+        primary: {
+            main: "#1976d2",
+        },
+        secondary: {
+            main: "#dc004e",
+        },
     },
-    secondary: {
-      main: "#dc004e",
-    },
-  },
 });
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </ThemeProvider>
-  </StrictMode>
+    <StrictMode>
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <BrowserRouter>
+                <AuthProvider>
+                    <AppRoutes />
+                </AuthProvider>
+            </BrowserRouter>
+        </ThemeProvider>
+    </StrictMode>
 );

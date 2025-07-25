@@ -72,13 +72,11 @@ function ScriptGenerator() {
         const generateSallocScript = () => {
             let script = "salloc";
             if (formData.jobName) script += ` --job-name=${formData.jobName}`;
-            if (formData.partition)
-                script += ` --partition=${formData.partition}`;
+            if (formData.partition) script += ` --partition=${formData.partition}`;
             if (formData.nodes) script += ` --nodelist=${formData.nodes}`;
             if (formData.runTime) script += ` --time=${formData.runTime}`;
             if (formData.gpuTotal) script += ` --gpus=${formData.gpuTotal}`;
-            if (formData.gpuPerNode)
-                script += ` --gres=gpu:${formData.gpuPerNode}`;
+            if (formData.gpuPerNode) script += ` --gres=gpu:${formData.gpuPerNode}`;
             setGeneratedScript(script);
         };
 
@@ -105,17 +103,14 @@ function ScriptGenerator() {
             if (partition) script += `\n#SBATCH --partition=${partition}`;
             if (runTime) script += `\n#SBATCH --time=${runTime}`;
             if (nodes) script += `\n#SBATCH --nodelist=${nodes}`;
-            if (tasksPerNode)
-                script += `\n#SBATCH --ntasks-per-node=${tasksPerNode}`;
-            if (cpusPerTask)
-                script += `\n#SBATCH --cpus-per-task=${cpusPerTask}`;
+            if (tasksPerNode) script += `\n#SBATCH --ntasks-per-node=${tasksPerNode}`;
+            if (cpusPerTask) script += `\n#SBATCH --cpus-per-task=${cpusPerTask}`;
             if (gpuTotal) script += `\n#SBATCH --gpus=${gpuTotal}`;
             if (gpuPerNode) script += `\n#SBATCH --gres=gpu:${gpuPerNode}`;
             if (outputFile) script += `\n#SBATCH --output=${outputFile}`;
             if (errorFile) script += `\n#SBATCH --error=${errorFile}`;
             if (workDir) script += `\n#SBATCH --chdir=${workDir}`;
-            if (mailType.length > 0)
-                script += `\n#SBATCH --mail-type=${mailType.join(",")}`;
+            if (mailType.length > 0) script += `\n#SBATCH --mail-type=${mailType.join(",")}`;
             if (mailUser) script += `\n#SBATCH --mail-user=${mailUser}`;
 
             script += `\n\n# --- 打印节点信息 ---
@@ -128,9 +123,7 @@ echo "Node IP: $head_node_ip"
 export LOGLEVEL=INFO
 
 # --- 以下是任务脚本 ---
-srun --nodes=${
-                nodes.length > 0 ? nodes.length : 1
-            } --ntasks-per-node=${tasksPerNode} ${
+srun --nodes=${nodes.length > 0 ? nodes.length : 1} --ntasks-per-node=${tasksPerNode} ${
                 taskScript || "torchrun your_script.py"
             }
 `;
@@ -443,13 +436,7 @@ srun --nodes=${
                             >
                                 {mailTypes.map((type) => (
                                     <MenuItem key={type} value={type}>
-                                        <Checkbox
-                                            checked={
-                                                formData.mailType.indexOf(
-                                                    type
-                                                ) > -1
-                                            }
-                                        />
+                                        <Checkbox checked={formData.mailType.indexOf(type) > -1} />
                                         <ListItemText primary={type} />
                                     </MenuItem>
                                 ))}
@@ -518,10 +505,7 @@ srun --nodes=${
             <Typography variant="h5" gutterBottom>
                 生成的脚本
             </Typography>
-            <Paper
-                variant="outlined"
-                sx={{ p: 2, background: "#f5f5f5", position: "relative" }}
-            >
+            <Paper variant="outlined" sx={{ p: 2, background: "#f5f5f5", position: "relative" }}>
                 <Button
                     variant="contained"
                     size="small"
@@ -543,16 +527,8 @@ srun --nodes=${
                 </Box>
             </Paper>
 
-            <Snackbar
-                open={copySuccess}
-                autoHideDuration={2000}
-                onClose={() => setCopySuccess(false)}
-            >
-                <Alert
-                    onClose={() => setCopySuccess(false)}
-                    severity="success"
-                    sx={{ width: "100%" }}
-                >
+            <Snackbar open={copySuccess} autoHideDuration={2000} onClose={() => setCopySuccess(false)}>
+                <Alert onClose={() => setCopySuccess(false)} severity="success" sx={{ width: "100%" }}>
                     脚本已成功复制到剪贴板！
                 </Alert>
             </Snackbar>
