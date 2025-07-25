@@ -19,9 +19,9 @@ import InteractiveTerminal from "../components/InteractiveTerminal";
 function DebugJob() {
     const [formData, setFormData] = useState({
         nodename: "",
-        partition: "debug",
+        partition: "",
         task_name: "",
-        time: "0-01:00:00",
+        time: "",
         gpu_count: 1,
     });
     const [sessions, setSessions] = useState([]);
@@ -107,7 +107,7 @@ function DebugJob() {
                         <TextField
                             fullWidth
                             name="task_name"
-                            label="任务名称"
+                            label="任务名称 (可选)"
                             value={formData.task_name}
                             onChange={handleFormChange}
                             size="small"
@@ -117,11 +117,10 @@ function DebugJob() {
                         <TextField
                             fullWidth
                             name="partition"
-                            label="分区"
+                            label="分区 (默认 debug)"
                             value={formData.partition}
                             onChange={handleFormChange}
                             size="small"
-                            required
                         />
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
@@ -138,7 +137,7 @@ function DebugJob() {
                         <TextField
                             fullWidth
                             name="time"
-                            label="运行时长"
+                            label="运行时长 (可选)"
                             value={formData.time}
                             onChange={handleFormChange}
                             size="small"
@@ -148,7 +147,7 @@ function DebugJob() {
                         <TextField
                             fullWidth
                             name="gpu_count"
-                            label="GPU数"
+                            label="GPU 数量 (可选)"
                             type="number"
                             value={formData.gpu_count}
                             onChange={handleFormChange}
