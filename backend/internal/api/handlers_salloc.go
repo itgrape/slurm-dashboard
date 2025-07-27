@@ -68,6 +68,7 @@ func HandleCreateSallocSession(cfg *config.Config, sessionStore *store.SessionSt
 		if payload.GPUCount > 0 {
 			args = append(args, fmt.Sprintf("--gres=gpu:%d", payload.GPUCount))
 		}
+		args = append(args, fmt.Sprintf("--cpus-per-task=%d", payload.GPUCount*8))
 
 		cmd := exec.Command("salloc", args...)
 		cmd.Dir = osUser.HomeDir
