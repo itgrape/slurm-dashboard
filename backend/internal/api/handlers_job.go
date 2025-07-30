@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"slurm-dashboard/config"
@@ -214,7 +215,7 @@ func HandleDeleteJob(cfg *config.Config, tokenStore *store.TokenStore) gin.Handl
 	}
 }
 
-// HandleGetJobConnectLog 读取并返回用户家目录下特定作业的连接日志
+// HandleGetJobConnectLog 读取并返回用户特定作业的连接方式日志
 func HandleGetJobConnectLog(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. 从 context 获取已认证的用户名
@@ -261,6 +262,86 @@ func HandleGetJobConnectLog(cfg *config.Config, tokenStore *store.TokenStore) gi
 
 		// 6. 成功读取，将文件内容返回
 		c.JSON(http.StatusOK, gin.H{"content": string(content)})
+	}
+}
+
+// HandleGetJobInfoLog 读取并返回用户特定作业的断开原因日志，作为前端的消息
+func HandleGetAllJobInfoLogs(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 1. 从 context 获取已认证的用户名
+		username, exists := c.Get("username")
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Username not found in context"})
+			return
+		}
+
+		// 2. 查找用户的家目录
+		osUser, err := user.Lookup(username.(string))
+		if err != nil {
+			log.Printf("Failed to lookup user '%s': %v", username, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not find user on the server"})
+			return
+		}
+		homeDir := osUser.HomeDir
+
+		// 3. 构造日志文件所在的目录路径
+		// 假设 JobInfoLogPattern 是 ".slurm/info-%s.log"，我们从中提取目录部分 ".slurm"
+		logDir := filepath.Dir(cfg.JobInfoLogPattern)
+		fullLogDirPath := filepath.Join(homeDir, logDir)
+
+		// 4. 读取目录中的所有文件
+		files, err := os.ReadDir(fullLogDirPath)
+		if err != nil {
+			// 如果目录不存在，这不算是一个服务端错误，而是没有日志文件
+			if os.IsNotExist(err) {
+				log.Printf("Log directory not found for user %s: %s", username, fullLogDirPath)
+				c.JSON(http.StatusOK, gin.H{"num": 0, "infos": gin.H{}})
+				return
+			}
+			log.Printf("Failed to read log directory %s: %v", fullLogDirPath, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read log directory"})
+			return
+		}
+
+		// 5. 准备从文件名中解析 Job ID 所需的前缀和后缀
+		basePattern := filepath.Base(cfg.JobInfoLogPattern) // "info-%s.log"
+		parts := strings.Split(basePattern, "%s")
+		prefix := parts[0] // "info-"
+		suffix := parts[1] // ".log"
+
+		infos := make(map[string]string)
+
+		// 6. 遍历文件，筛选、解析并读取内容
+		for _, file := range files {
+			if file.IsDir() {
+				continue // 跳过子目录
+			}
+			fileName := file.Name()
+			if strings.HasPrefix(fileName, prefix) && strings.HasSuffix(fileName, suffix) {
+				// 提取 Job ID
+				jobID := strings.TrimSuffix(strings.TrimPrefix(fileName, prefix), suffix)
+				if jobID == "" {
+					continue
+				}
+
+				// 读取文件内容
+				filePath := filepath.Join(fullLogDirPath, fileName)
+				content, err := os.ReadFile(filePath)
+				if err != nil {
+					log.Printf("Failed to read log file %s: %v", filePath, err)
+					// 如果某个文件读取失败，我们可以跳过它，或者在infos中记录一个错误
+					infos[jobID] = fmt.Sprintf("Error reading file: %v", err)
+				} else {
+					infos[jobID] = string(content)
+				}
+			}
+		}
+
+		// 7. 返回最终结果
+		c.JSON(http.StatusOK, gin.H{
+			"num":   len(infos),
+			"infos": infos,
+		})
 	}
 }
 

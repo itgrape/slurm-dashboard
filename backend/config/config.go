@@ -16,6 +16,7 @@ type Config struct {
 	SlurmTokenLifespanSec string
 	ServerPort            string
 	JobConnectLogPattern  string
+	JobInfoLogPattern     string
 }
 
 // LoadConfig 加载并返回所有配置
@@ -36,6 +37,7 @@ func LoadConfig() *Config {
 		SlurmTokenLifespanSec: "90000", // 25h
 
 		JobConnectLogPattern: ".slurm/connect-%s.log",
+		JobInfoLogPattern:    ".slurm/info-%s.log",
 
 		ServerPort: "80",
 	}

@@ -6,29 +6,32 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MouseIcon from "@mui/icons-material/Mouse";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import InfoIcon from "@mui/icons-material/Info";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import BatchPredictionIcon from "@mui/icons-material/BatchPrediction";
 import LinkIcon from "@mui/icons-material/Link";
 
 function Tutorial() {
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
+            {/* <Typography variant="h4" gutterBottom>
                 Slurm 仪表盘使用教程
-            </Typography>
+            </Typography> */}
 
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography paragraph>
-                    本系统旨在为您提供一个直观、易用的界面来监控集群状态、管理您的计算任务以及快速生成 Slurm
-                    作业脚本。本教程将引导您了解系统的主要功能和使用方法。
+                    本系统旨在为您提供一个直观、易用的界面来监控集群状态、提交和管理您的计算任务，并获取重要的作业通知。本教程将引导您了解系统的主要功能和使用方法。
                 </Typography>
             </Paper>
 
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
                     <DashboardIcon sx={{ mr: 1 }} />
-                    仪表盘概览
+                    集群资源概览
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                <Typography paragraph>登录后您看到的第一个页面就是仪表盘，它为您提供了集群的实时状态快照。</Typography>
+                <Typography paragraph>登录后您看到的第一个页面就是“集群资源”，它为您提供了集群的实时状态快照。</Typography>
                 <List>
                     <ListItem>
                         <ListItemText
@@ -67,8 +70,17 @@ function Tutorial() {
                             <MouseIcon />
                         </ListItemIcon>
                         <ListItemText
-                            primary="查看资源详情"
-                            secondary="直接点击表格中的任意一行，系统会弹出一个窗口，详细展示该任务请求和实际分配到的计算资源（TRES 和 GRES 详情）。"
+                            primary="查看资源详情以及连接信息"
+                            secondary="直接点击表格中的任意一行，系统会弹出一个窗口，详细展示该任务请求和实际分配到的计算资源（TRES 和 GRES 详情）以及连接所需要的脚本。"
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemIcon>
+                            <LinkIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="连接到作业"
+                            secondary="点击某项具体的作业后，将“连接信息”中的内容复制到您的 ~/.ssh/config 目录下，然后就可以像连接以前的服务器那样连接您申请到的计算节点。如果是第一次使用本系统，您还需要执行 ssh-keygen -t rsa -b 4096 后按三下回车，然后执行 ssh-copy-id <username>@<login_node_id>。"
                         />
                     </ListItem>
                     <ListItem>
@@ -85,70 +97,53 @@ function Tutorial() {
 
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-                    <CodeIcon sx={{ mr: 1 }} />
-                    脚本生成器
+                    <CloudUploadIcon sx={{ mr: 1 }} />
+                    作业提交
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 <Typography paragraph>
-                    为了简化 Slurm 脚本的编写，“脚本生成器”提供了一个表单化的方式来创建任务脚本。
+                    系统提供了多种方式来帮助您快速、准确地提交计算任务，这些功能都集中在侧边栏的“作业提交”菜单下。
                 </Typography>
                 <List>
                     <ListItem>
+                        <ListItemIcon>
+                            <PlayCircleOutlineIcon />
+                        </ListItemIcon>
                         <ListItemText
-                            primary="选择任务类型"
+                            primary="交互式作业"
                             secondary={
                                 <>
-                                    <Chip label="调试任务 (salloc)" size="small" sx={{ mr: 1 }} />
-                                    用于快速申请资源进行交互式调试。表单较为简单，填写后会生成一行 `salloc` 命令。
+                                    用于需要实时交互和调试的场景。您可以在此页面填写任务名称、分区、所需资源等参数来快速创建一个交互式会话。
+                                    <br />
+                                    创建成功后，页面下方会生成一个对应的终端标签页，您可以直接在网页上进行操作，就像在本地终端一样。
                                 </>
                             }
                         />
                     </ListItem>
                     <ListItem>
+                        <ListItemIcon>
+                            <BatchPredictionIcon />
+                        </ListItemIcon>
                         <ListItemText
-                            primary=""
+                            primary="批处理作业"
                             secondary={
                                 <>
-                                    <Chip label="训练任务 (sbatch)" size="small" sx={{ mr: 1 }} />
-                                    用于提交非交互式的后台批处理任务。表单内容更丰富，并按功能进行了分组：
-                                    <List dense>
-                                        <ListItem>
-                                            <strong>任务配置：</strong>设置任务名称、分区等基本信息。
-                                        </ListItem>
-                                        <ListItem>
-                                            <strong>资源配置：</strong>
-                                            精细化设置节点、CPU、GPU等计算资源。
-                                        </ListItem>
-                                        <ListItem>
-                                            <strong>日志与工作目录：</strong>
-                                            指定日志输出路径和工作目录。
-                                        </ListItem>
-                                        <ListItem>
-                                            <strong>邮件通知：</strong>
-                                            设置在任务开始、结束或失败时接收邮件提醒。
-                                        </ListItem>
-                                        <ListItem>
-                                            <strong>任务脚本：</strong>
-                                            在页面最下方的大输入框中，填写您实际要执行的命令（例如 `srun python
-                                            train.py`）。
-                                        </ListItem>
-                                    </List>
+                                    用于提交需要后台长时间运行的非交互式任务（如模型训练）。此页面提供了一个完整的表单，覆盖了任务配置、资源配置、日志、邮件通知等所有常用 sbatch
+                                    选项。
+                                    <br />
+                                    填写表单时，右侧会实时生成相应的 sbatch
+                                    脚本预览。确认无误后，直接点击“提交”按钮即可将任务提交到 Slurm 系统中。
                                 </>
                             }
                         />
                     </ListItem>
                     <ListItem>
+                        <ListItemIcon>
+                            <CodeIcon />
+                        </ListItemIcon>
                         <ListItemText
-                            primary="使用方式"
-                            secondary={
-                                <div>
-                                    点击右上角的“复制”按钮，即可方便地将脚本内容保存到剪贴板。
-                                    <br></br>
-                                    对于调试任务，直接在终端中粘贴执行即可。<br></br>
-                                    对于批处理任务，您可以将生成的脚本内容保存为一个文件（如
-                                    `my_job.sh`），然后在终端中使用 `sbatch my_job.sh` 提交任务。
-                                </div>
-                            }
+                            primary="脚本生成"
+                            secondary="如果您想在自己的本地终端中提交任务，可以使用“脚本生成”功能。它提供了与“批处理作业”类似的表单，但最终目的是生成可复制的 salloc（调试任务）或 sbatch（训练任务）脚本。点击“复制”按钮后，即可将生成的命令或脚本内容粘贴到您的终端或文件中使用。"
                         />
                     </ListItem>
                 </List>
@@ -156,18 +151,27 @@ function Tutorial() {
 
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-                    <LinkIcon sx={{ mr: 1 }} />
-                    连接到正在运行的作业
+                    <InfoIcon sx={{ mr: 1 }} />
+                    消息通知
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 <Typography paragraph>
-                    在您提交作业的那个目录下，系统会自动生成名为 connect-jobid .log 和 info-jobid.log 的文件。
-                    <br />
-                    <br />
-                    connect-jobid.log 文件包含了连接到正在运行作业的方法以及命令，您可以参考该文件来连接到作业。
-                    <br />
-                    info-jobid.log 文件则包含了作业因资源使用不足而被强制断掉的具体原因。
+                    为了让您及时了解作业的重要状态变更（例如因资源使用率不足而被系统终止），系统引入了消息通知功能。
                 </Typography>
+                <List>
+                    <ListItem>
+                        <ListItemText
+                            primary="消息标记"
+                            secondary="当有未读的重要信息时，页面右上角您的用户头像上会出现一个红色数字标记，提示您有新的通知。"
+                        />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemText
+                            primary="查看信息"
+                            secondary="点击用户头像，在弹出的菜单中选择“查看信息”选项，即可打开一个对话框，其中会列出所有关于您作业的系统通知详情。"
+                        />
+                    </ListItem>
+                </List>
             </Paper>
 
             <Paper sx={{ p: 3, mb: 3 }}>

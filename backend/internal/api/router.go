@@ -43,6 +43,7 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore, sessionStore *s
 	{
 		apiV1.GET("/cluster/status", GetClusterStatusHandler(cfg, tokenStore))
 		apiV1.GET("/jobs", GetJobsHandler(cfg, tokenStore))
+		apiV1.GET("/jobs/info", HandleGetAllJobInfoLogs(cfg, tokenStore))
 		jobGroup := apiV1.Group("/job")
 		{
 			jobGroup.POST("/submit", SubmitJobHandler(cfg, tokenStore))

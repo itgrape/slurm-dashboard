@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -19,6 +19,13 @@ import {
     MenuItem,
     Tooltip,
     Collapse,
+    Badge,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Button,
 } from "@mui/material";
 import {
     Menu as MenuIcon,
@@ -36,10 +43,13 @@ import {
     CloudUpload as CloudUploadIcon,
     PlayCircleOutline as PlayCircleOutlineIcon,
     BatchPrediction as BatchPredictionIcon,
+    Info as InfoIcon,
 } from "@mui/icons-material";
+import { deepOrange, deepPurple } from '@mui/material/colors';
 import { styled } from "@mui/material/styles";
 import { Link } from "react-router-dom";
 import Terminal from "../components/Terminal";
+import apiService from "../services/api";
 
 const drawerWidth = 240;
 const iconTextDistance = 40;
@@ -108,6 +118,22 @@ function MainLayout() {
     const [anchorElUser, setAnchorElUser] = useState(null);
     const [isTerminalOpen, setIsTerminalOpen] = useState(false);
     const [subMenuOpen, setSubMenuOpen] = useState(true);
+    const [jobInfos, setJobInfos] = useState({ infos: {}, num: 0 });
+    const [openInfoDialog, setOpenInfoDialog] = useState(false);
+
+    useEffect(() => {
+        const fetchJobInfos = async () => {
+            try {
+                const data = await apiService.getJobInfos();
+                setJobInfos(data);
+            } catch (error) {
+                console.error("Failed to fetch job infos:", error);
+            }
+        };
+        fetchJobInfos();
+        const intervalId = setInterval(fetchJobInfos, 30000); // fetch every 30 seconds
+        return () => clearInterval(intervalId);
+    }, []);
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -138,6 +164,15 @@ function MainLayout() {
         setSubMenuOpen(!subMenuOpen);
     };
 
+    const handleOpenInfoDialog = () => {
+        setOpenInfoDialog(true);
+        handleCloseUserMenu();
+    };
+
+    const handleCloseInfoDialog = () => {
+        setOpenInfoDialog(false);
+    };
+
     return (
         <Box sx={{ display: "flex" }}>
             <AppBarStyled position="fixed" open={open}>
@@ -164,9 +199,11 @@ function MainLayout() {
                     <Box sx={{ flexGrow: 0, ml: 2 }}>
                         <Tooltip title="打开设置">
                             <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                                <Avatar sx={{ bgcolor: "secondary.main" }}>
-                                    {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
-                                </Avatar>
+                                <Badge badgeContent={jobInfos.num} color="error">
+                                    <Avatar sx={{ bgcolor: deepPurple[500] }}>
+                                        {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
+                                    </Avatar>
+                                </Badge>
                             </IconButton>
                         </Tooltip>
                         <Menu
@@ -189,6 +226,12 @@ function MainLayout() {
                                 <Typography textAlign="center">{user?.name || user?.username}</Typography>
                             </MenuItem>
                             <Divider />
+                            <MenuItem onClick={handleOpenInfoDialog}>
+                                <ListItemIcon>
+                                    <InfoIcon fontSize="small" />
+                                </ListItemIcon>
+                                <Typography textAlign="center">查看信息</Typography>
+                            </MenuItem>
                             <MenuItem onClick={handleLogout}>
                                 <ListItemIcon>
                                     <LogoutIcon fontSize="small" />
@@ -289,6 +332,34 @@ function MainLayout() {
             >
                 <Terminal isOpen={isTerminalOpen} />
             </Drawer>
+
+            {/* Info Dialog */}
+            <Dialog open={openInfoDialog} onClose={handleCloseInfoDialog} scroll="paper" fullWidth maxWidth="md">
+                <DialogTitle>作业信息</DialogTitle>
+                <DialogContent dividers>
+                    <DialogContentText
+                        component="div" // Use div to allow for preformatted text
+                        sx={{
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-all",
+                            fontFamily: "monospace",
+                            fontSize: "0.875rem",
+                        }}
+                    >
+                        {Object.entries(jobInfos.infos).map(([jobId, info]) => (
+                            <Box key={jobId} sx={{ mb: 2 }}>
+                                <Typography variant="h6" component="div">
+                                    Job ID: {jobId}
+                                </Typography>
+                                {info}
+                            </Box>
+                        ))}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseInfoDialog}>关闭</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

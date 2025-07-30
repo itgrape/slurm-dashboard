@@ -102,6 +102,17 @@ const apiService = {
         }
     },
 
+    // 获取作业失败信息
+    getJobInfos: async () => {
+        try {
+            const response = await api.get("/v1/jobs/info");
+            return response;
+        } catch (error) {
+            console.error("获取作业信息失败:", error);
+            throw error;
+        }
+    },
+
     // 删除作业
     deleteJob: async (jobId) => {
         try {
