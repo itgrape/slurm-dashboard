@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"os/user"
 
@@ -49,7 +51,7 @@ func ShellHandler(cfg *config.Config) gin.HandlerFunc {
 		defer ws.Close()
 
 		// 验证用户是否存在于系统上
-		_, err = user.Lookup(username)
+		osUser, err := user.Lookup(username)
 		if err != nil {
 			log.Printf("Failed to lookup user %s: %v", username, err)
 			ws.WriteMessage(websocket.TextMessage, []byte("Error: Cannot find user on the system."))
@@ -58,6 +60,15 @@ func ShellHandler(cfg *config.Config) gin.HandlerFunc {
 
 		// 使用 `su` 来为指定用户启动一个完整的登录Shell
 		cmd := exec.Command("su", "-", username)
+
+		// 注入正确的环境变量
+		cmd.Env = []string{
+			"TERM=xterm",
+			fmt.Sprintf("HOME=%s", osUser.HomeDir),
+			fmt.Sprintf("USER=%s", username),
+			fmt.Sprintf("LOGNAME=%s", username),
+			fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		}
 
 		ptmx, err := pty.Start(cmd)
 		if err != nil {
