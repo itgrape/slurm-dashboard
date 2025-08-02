@@ -32,6 +32,9 @@ func LoginHandler(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerF
 			return
 		}
 
+		role := auth.CheckAdminStatus(payload.Username)
+		log.Printf("User %s logged in with role: %s", payload.Username, role)
+
 		slurmToken, err := services.GetSlurmToken(payload.Username, cfg.SlurmTokenLifespanSec)
 		if err != nil {
 			log.Printf("Slurm token generation error for user %s: %v", payload.Username, err)
@@ -48,6 +51,6 @@ func LoginHandler(cfg *config.Config, tokenStore *store.TokenStore) gin.HandlerF
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"token": customToken})
+		c.JSON(http.StatusOK, gin.H{"token": customToken, "user": gin.H{"username": payload.Username, "role": role}})
 	}
 }

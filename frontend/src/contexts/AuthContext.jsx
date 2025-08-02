@@ -19,31 +19,37 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem("user");
 
         if (!isTokenExpired()) {
-            // Token有效
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    setUser(parsedUser);
+                } catch (error) {
+                    console.error("Error parsing stored user:", error);
+                    clearToken();
+                }
             }
         } else {
-            // Token已过期，清除数据
             clearToken();
         }
 
         setLoading(false);
     }, []);
 
-    // 登录函数 - 使用真实API
+    // 登录函数
     const login = async (username, password) => {
         try {
             // 调用API登录服务
             const response = await apiService.login(username, password);
-            const { token } = response;
+            const { token, user: userInfoResponse } = response;
 
             if (token) {
-                // 保存token到本地存储并设置24小时过期时间
                 saveToken(token);
 
                 // 创建用户信息对象
-                const userInfo = { username };
+                const userInfo = {
+                    username: userInfoResponse.username,
+                    role: userInfoResponse.role || "user",
+                };
                 setUser(userInfo);
                 localStorage.setItem("user", JSON.stringify(userInfo));
 
@@ -63,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     // 登出函数
     const logout = () => {
         setUser(null);
-        clearToken(); // 清除token和相关数据
+        clearToken();
         navigate("/login");
     };
 
