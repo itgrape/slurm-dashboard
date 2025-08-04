@@ -140,8 +140,14 @@ function Jobs() {
                 setConnectInfo(connectionResponse.content);
             }
         } catch (err) {
-            setError("无法加载作业连接信息。");
-            console.error(err);
+            // 如果错误是 404 (Not Found)，则静默处理，不显示错误提示
+            if (err.response && err.response.status === 404) {
+                console.log(`Connection info not found for job ${job.job_id}.`);
+            } else {
+                // 对于其他错误（如网络问题），仍然显示错误提示
+                setError("无法加载作业连接信息。");
+                console.error(err);
+            }
         } finally {
             setDetailLoading(false);
         }
