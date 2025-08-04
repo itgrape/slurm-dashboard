@@ -18,11 +18,11 @@ import InteractiveTerminal from "../components/InteractiveTerminal";
 
 function DebugJob() {
     const [formData, setFormData] = useState({
-        nodename: "",
-        partition: "",
         task_name: "",
-        time: "",
-        gpu_count: 1,
+        partition: "",
+        gpu_count: 0,
+        gpu_type: "",
+        cpu_count: 0,
     });
     const [sessions, setSessions] = useState([]);
     const [activeTab, setActiveTab] = useState(0);
@@ -59,6 +59,17 @@ function DebugJob() {
         setLoading(true);
 
         try {
+            // 过滤不合法数据
+            if (String(formData.partition).toLowerCase().includes("cpu") && !(formData.cpu_count > 0)) {
+                throw new Error("若要指定 CPU 节点，必须设置 CPU 数量");
+            }
+            if (formData.gpu_count > 0 && formData.cpu_count > 0) {
+                throw new Error("指定 GPU 数量后，CPU 数量会为自动分配，请勿重复指定");
+            }
+            if (!(formData.gpu_count > 0 || formData.cpu_count > 0)) {
+                throw new Error("不能申请空资源，请指定 GPU 或 CPU 数量");
+            }
+
             const response = await apiService.createSallocSession(formData);
             const newSession = {
                 id: response.session_id,
@@ -71,7 +82,7 @@ function DebugJob() {
             localStorage.setItem("interactiveSessions", JSON.stringify(updatedSessions));
             setActiveTab(updatedSessions.length - 1); // 自动切换到新标签
         } catch (err) {
-            setError(err.response?.data?.details || "创建会话失败，请检查参数或联系管理员。");
+            setError(err.response?.data?.details || err.message || "创建会话失败，请检查参数或联系管理员");
         } finally {
             setLoading(false);
         }
@@ -123,26 +134,6 @@ function DebugJob() {
                             size="small"
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <TextField
-                            fullWidth
-                            name="nodename"
-                            label="节点名称 (可选)"
-                            value={formData.nodename}
-                            onChange={handleFormChange}
-                            size="small"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
-                        <TextField
-                            fullWidth
-                            name="time"
-                            label="运行时长 (可选)"
-                            value={formData.time}
-                            onChange={handleFormChange}
-                            size="small"
-                        />
-                    </Grid>
                     <Grid item xs={6} sm={4} md={1}>
                         <TextField
                             fullWidth
@@ -152,6 +143,29 @@ function DebugJob() {
                             value={formData.gpu_count}
                             onChange={handleFormChange}
                             size="small"
+                        />
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={1}>
+                        <TextField
+                            fullWidth
+                            name="gpu_type"
+                            label="GPU 类型 (可选)"
+                            type="number"
+                            value={formData.gpu_type}
+                            onChange={handleFormChange}
+                            size="small"
+                        />
+                    </Grid>
+                    <Grid item xs={6} sm={4} md={1}>
+                        <TextField
+                            fullWidth
+                            name="cpu_count"
+                            label="CPU 数量 (可选)"
+                            type="number"
+                            value={formData.cpu_count}
+                            onChange={handleFormChange}
+                            size="small"
+                            disabled={formData.gpu_count > 0}
                         />
                     </Grid>
                     <Grid item xs={6} sm={2} md={2}>

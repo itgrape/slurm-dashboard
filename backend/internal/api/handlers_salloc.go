@@ -26,9 +26,9 @@ import (
 type SallocPayload struct {
 	TaskName  string `json:"task_name"`
 	Partition string `json:"partition"`
-	NodeName  string `json:"nodename"`
-	Time      string `json:"time"`
 	GPUCount  int    `json:"gpu_count"`
+	GPUType   string `json:"gpu_type"`
+	CPUCount  int    `json:"cpu_count"`
 }
 
 // HandleCreateSallocSession 创建一个新的 salloc 会话 (POST)
@@ -59,16 +59,15 @@ func HandleCreateSallocSession(cfg *config.Config, sessionStore *store.SessionSt
 		if payload.Partition != "" {
 			args = append(args, "--partition", payload.Partition)
 		}
-		if payload.NodeName != "" {
-			args = append(args, "--nodelist", payload.NodeName)
-		}
-		if payload.Time != "" {
-			args = append(args, "--time", payload.Time)
-		}
 		if payload.GPUCount > 0 {
-			args = append(args, fmt.Sprintf("--gres=gpu:%d", payload.GPUCount))
+			args = append(args, "--gpus", strconv.Itoa(payload.GPUCount))
 		}
-		args = append(args, fmt.Sprintf("--cpus-per-task=%d", payload.GPUCount*8))
+		if payload.GPUType != "" {
+			args = append(args, "--constraint", payload.GPUType)
+		}
+		if payload.CPUCount > 0 {
+			args = append(args, "--cpus-per-task", strconv.Itoa(payload.CPUCount))
+		}
 
 		cmd := exec.Command("salloc", args...)
 		cmd.Dir = osUser.HomeDir

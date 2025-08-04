@@ -14,7 +14,7 @@ import ScriptGenerator from "../pages/ScriptGenerator";
 import Tutorial from "../pages/Tutorial";
 import BatchJob from "../pages/JobBatch";
 import DebugJob from "../pages/JobDebug";
-import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminDashboard from "../pages/AdminDashboard";
 
 /**
  * @description 根据用户角色重定向到相应的主页。

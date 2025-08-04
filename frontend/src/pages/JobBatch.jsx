@@ -32,11 +32,9 @@ const initialFormState = {
     partition: "",
     runTime: "",
     // 资源
-    nodes: "",
     gpuTotal: "",
-    gpuPerNode: "",
+    gpuType: "",
     tasksPerNode: 1,
-    cpusPerTask: 1,
     // 日志
     outputFile: "",
     errorFile: "",
@@ -63,27 +61,15 @@ function BatchJob() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleGpuInputChange = (event) => {
-        const { name, value } = event.target;
-        const otherGpuField = name === "gpuTotal" ? "gpuPerNode" : "gpuTotal";
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-            [otherGpuField]: "", // 清空另一个GPU输入框
-        }));
-    };
-
     // 根据表单数据生成脚本
     useEffect(() => {
         const {
             jobName,
             partition,
             runTime,
-            nodes,
             gpuTotal,
-            gpuPerNode,
+            gpuType,
             tasksPerNode,
-            cpusPerTask,
             outputFile,
             errorFile,
             workDir,
@@ -96,11 +82,9 @@ function BatchJob() {
 #SBATCH --job-name=${jobName || "my-job"}`;
         if (partition) script += `\n#SBATCH --partition=${partition}`;
         if (runTime) script += `\n#SBATCH --time=${runTime}`;
-        if (nodes) script += `\n#SBATCH --nodelist=${nodes}`;
         if (tasksPerNode) script += `\n#SBATCH --ntasks-per-node=${tasksPerNode}`;
-        if (cpusPerTask) script += `\n#SBATCH --cpus-per-task=${cpusPerTask}`;
         if (gpuTotal) script += `\n#SBATCH --gpus=${gpuTotal}`;
-        if (gpuPerNode) script += `\n#SBATCH --gres=gpu:${gpuPerNode}`;
+        if (gpuType) script += `\n#SBATCH --constraint=${gpuType}`;
         if (outputFile) script += `\n#SBATCH --output=${outputFile}`;
         if (errorFile) script += `\n#SBATCH --error=${errorFile}`;
         if (workDir) script += `\n#SBATCH --chdir=${workDir}`;
@@ -117,10 +101,8 @@ echo "Node IP: $head_node_ip"
 export LOGLEVEL=INFO
 
 # --- 以下是任务脚本 ---
-srun --nodes=${nodes.length > 0 ? nodes.length : 1} --ntasks-per-node=${tasksPerNode} ${
-            taskScript || "torchrun your_script.py"
-        }
-`;
+srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript || "torchrun your_script.py"}`;
+
         setGeneratedScript(script);
     }, [formData]);
 
@@ -201,30 +183,10 @@ srun --nodes=${nodes.length > 0 ? nodes.length : 1} --ntasks-per-node=${tasksPer
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
-                            label="指定节点 (可选)"
-                            name="nodes"
-                            value={formData.nodes}
-                            onChange={handleFormChange}
-                            helperText="多个节点用逗号分隔"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
                             label="每个节点任务数 (可选)"
                             name="tasksPerNode"
                             type="number"
                             value={formData.tasksPerNode}
-                            onChange={handleFormChange}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="每个任务CPU数 (可选)"
-                            name="cpusPerTask"
-                            type="number"
-                            value={formData.cpusPerTask}
                             onChange={handleFormChange}
                         />
                     </Grid>
@@ -238,19 +200,16 @@ srun --nodes=${nodes.length > 0 ? nodes.length : 1} --ntasks-per-node=${tasksPer
                             name="gpuTotal"
                             type="number"
                             value={formData.gpuTotal}
-                            onChange={handleGpuInputChange}
-                            helperText="与“每节点GPU数”二选一"
+                            onChange={handleFormChange}
                         />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField
-                            sx={{ minWidth: "220px" }}
-                            label="每节点GPU数量 (可选)"
-                            name="gpuPerNode"
-                            type="number"
-                            value={formData.gpuPerNode}
-                            onChange={handleGpuInputChange}
-                            helperText="与“GPU总数”二选一"
+                            fullWidth
+                            label="GPU类型 (可选)"
+                            name="gpuType"
+                            value={formData.gpuType}
+                            onChange={handleFormChange}
                         />
                     </Grid>
                 </Grid>
