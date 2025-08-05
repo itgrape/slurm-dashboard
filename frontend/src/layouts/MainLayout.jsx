@@ -106,7 +106,6 @@ const menuItems = [
         items: [
             { text: "交互式作业", icon: <PlayCircleOutlineIcon />, path: "/job-debug" },
             { text: "批处理作业", icon: <BatchPredictionIcon />, path: "/job-batch" },
-            { text: "脚本生成", icon: <CodeIcon />, path: "/script-generator" },
         ],
     },
     { text: "使用教程", icon: <SchoolIcon />, path: "/tutorial" },

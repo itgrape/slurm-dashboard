@@ -10,7 +10,6 @@ import Jobs from "../pages/Jobs";
 import Login from "../pages/Login";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminProtectedRoute from "./AdminProtectedRoute";
-import ScriptGenerator from "../pages/ScriptGenerator";
 import Tutorial from "../pages/Tutorial";
 import BatchJob from "../pages/JobBatch";
 import DebugJob from "../pages/JobDebug";
@@ -66,7 +65,6 @@ export default function AppRoutes() {
                     <Route path="jobs" element={<Jobs />} />
                     <Route path="job-debug" element={<DebugJob />} />
                     <Route path="job-batch" element={<BatchJob />} />
-                    <Route path="script-generator" element={<ScriptGenerator />} />
                     <Route path="tutorial" element={<Tutorial />} />
                 </Route>
             </Route>

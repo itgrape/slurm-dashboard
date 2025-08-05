@@ -11,6 +11,10 @@ import {
     Alert,
     CircularProgress,
     IconButton,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import apiService from "../services/api";
@@ -19,9 +23,9 @@ import InteractiveTerminal from "../components/InteractiveTerminal";
 function DebugJob() {
     const [formData, setFormData] = useState({
         task_name: "",
-        partition: "",
+        task_type: "",
+        partition_num: "",
         gpu_count: 0,
-        gpu_type: "",
         cpu_count: 0,
     });
     const [sessions, setSessions] = useState([]);
@@ -49,7 +53,7 @@ function DebugJob() {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: name === "gpu_count" ? parseInt(value, 10) || 0 : value,
+            [name]: name === "gpu_count" || name === "cpu_count" ? parseInt(value, 10) || 0 : value,
         }));
     };
 
@@ -60,9 +64,6 @@ function DebugJob() {
 
         try {
             // 过滤不合法数据
-            if (String(formData.partition).toLowerCase().includes("cpu") && !(formData.cpu_count > 0)) {
-                throw new Error("若要指定 CPU 节点，必须设置 CPU 数量");
-            }
             if (formData.gpu_count > 0 && formData.cpu_count > 0) {
                 throw new Error("指定 GPU 数量后，CPU 数量会为自动分配，请勿重复指定");
             }
@@ -70,10 +71,29 @@ function DebugJob() {
                 throw new Error("不能申请空资源，请指定 GPU 或 CPU 数量");
             }
 
-            const response = await apiService.createSallocSession(formData);
+            // 拼接分区
+            let suffix = "debug";
+            if (formData.task_type === "run") {
+                if (formData.gpu_count > 0) {
+                    suffix = "gpu";
+                } else {
+                    suffix = "cpu";
+                }
+            }
+            let partition = `${suffix}-${formData.partition_num}`
+
+            // 构造请求数据向后端发送请求
+            let payload = {
+                task_name: formData.task_name,
+                partition: partition,
+                gpu_count: formData.gpu_count,
+                cpu_count: formData.cpu_count,
+            }
+
+            const response = await apiService.createSallocSession(payload);
             const newSession = {
                 id: response.session_id,
-                name: formData.task_name || `Session-${response.session_id.substring(0, 6)}`,
+                name: payload.task_name || `Session-${response.session_id.substring(0, 6)}`,
                 status: response.status,
             };
 
@@ -125,13 +145,30 @@ function DebugJob() {
                         />
                     </Grid>
                     <Grid item xs={12} sm={6} md={2}>
+                        <FormControl fullWidth size="small" sx={{ minWidth: 140 }} required>
+                            <InputLabel id="task-type-label">任务类型</InputLabel>
+                            <Select
+                                labelId="task-type-label"
+                                id="task_type"
+                                name="task_type"
+                                value={formData.task_type}
+                                onChange={handleFormChange}
+                                label="任务类型"
+                            >
+                                <MenuItem value="run">运行</MenuItem>
+                                <MenuItem value="debug">调试</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
                         <TextField
                             fullWidth
-                            name="partition"
-                            label="分区 (默认 debug)"
-                            value={formData.partition}
+                            name="partition_num"
+                            label="分区号"
+                            value={formData.partition_num}
                             onChange={handleFormChange}
                             size="small"
+                            required
                         />
                     </Grid>
                     <Grid item xs={6} sm={4} md={1}>
@@ -141,17 +178,6 @@ function DebugJob() {
                             label="GPU 数量 (可选)"
                             type="number"
                             value={formData.gpu_count}
-                            onChange={handleFormChange}
-                            size="small"
-                        />
-                    </Grid>
-                    <Grid item xs={6} sm={4} md={1}>
-                        <TextField
-                            fullWidth
-                            name="gpu_type"
-                            label="GPU 类型 (可选)"
-                            type="number"
-                            value={formData.gpu_type}
                             onChange={handleFormChange}
                             size="small"
                         />

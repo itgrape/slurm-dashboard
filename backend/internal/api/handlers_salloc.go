@@ -27,7 +27,6 @@ type SallocPayload struct {
 	TaskName  string `json:"task_name"`
 	Partition string `json:"partition"`
 	GPUCount  int    `json:"gpu_count"`
-	GPUType   string `json:"gpu_type"`
 	CPUCount  int    `json:"cpu_count"`
 }
 
@@ -53,6 +52,7 @@ func HandleCreateSallocSession(cfg *config.Config, sessionStore *store.SessionSt
 
 		// 构建 salloc 命令
 		args := []string{}
+		args = append(args, "--ntasks-per-node", "1")
 		if payload.TaskName != "" {
 			args = append(args, "--job-name", payload.TaskName)
 		}
@@ -61,9 +61,6 @@ func HandleCreateSallocSession(cfg *config.Config, sessionStore *store.SessionSt
 		}
 		if payload.GPUCount > 0 {
 			args = append(args, "--gpus", strconv.Itoa(payload.GPUCount))
-		}
-		if payload.GPUType != "" {
-			args = append(args, "--constraint", payload.GPUType)
 		}
 		if payload.CPUCount > 0 {
 			args = append(args, "--cpus-per-task", strconv.Itoa(payload.CPUCount))

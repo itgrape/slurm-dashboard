@@ -29,11 +29,12 @@ const mailTypes = ["BEGIN", "END", "FAIL"];
 const initialFormState = {
     // 任务
     jobName: "",
-    partition: "",
+    task_type: "",
+    partition_num: "",
     runTime: "",
     // 资源
     gpuTotal: "",
-    gpuType: "",
+    cpuTotal: "",
     tasksPerNode: 1,
     // 日志
     outputFile: "",
@@ -65,10 +66,11 @@ function BatchJob() {
     useEffect(() => {
         const {
             jobName,
-            partition,
+            task_type,
+            partition_num,
             runTime,
             gpuTotal,
-            gpuType,
+            cpuTotal,
             tasksPerNode,
             outputFile,
             errorFile,
@@ -78,13 +80,31 @@ function BatchJob() {
             taskScript,
         } = formData;
 
+        // 拼接分区信息
+        let final_partition = "";
+        if (task_type && partition_num && partition_num.trim() !== "") {
+            let suffix = "";
+            if (task_type === "debug") {
+                suffix = "debug";
+            } else if (task_type === "run") {
+                if ((parseInt(gpuTotal, 10) || 0) > 0) {
+                    suffix = "gpu";
+                } else {
+                    suffix = "cpu";
+                }
+            }
+            if (suffix) {
+                final_partition = `${suffix}-${partition_num}`;
+            }
+        }
+
         let script = `#!/bin/bash
 #SBATCH --job-name=${jobName || "my-job"}`;
-        if (partition) script += `\n#SBATCH --partition=${partition}`;
+        if (final_partition) script += `\n#SBATCH --partition=${final_partition}`;
         if (runTime) script += `\n#SBATCH --time=${runTime}`;
         if (tasksPerNode) script += `\n#SBATCH --ntasks-per-node=${tasksPerNode}`;
         if (gpuTotal) script += `\n#SBATCH --gpus=${gpuTotal}`;
-        if (gpuType) script += `\n#SBATCH --constraint=${gpuType}`;
+        if (cpuTotal) script += `\n#SBATCH --cpus-per-task=${Math.floor(cpuTotal / tasksPerNode)}`;
         if (outputFile) script += `\n#SBATCH --output=${outputFile}`;
         if (errorFile) script += `\n#SBATCH --error=${errorFile}`;
         if (workDir) script += `\n#SBATCH --chdir=${workDir}`;
@@ -109,6 +129,17 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
     const handleSubmitScript = async () => {
         setIsSubmitting(true);
         try {
+            // 简单的表单数据过滤
+            const { gpuTotal, cpuTotal } = formData;
+            const gpuCount = parseInt(gpuTotal, 10) || 0;
+            const cpuCount = parseInt(cpuTotal, 10) || 0;
+            if (gpuCount > 0 && cpuCount > 0) {
+                throw new Error("指定 GPU 数量后，CPU 数量会为自动分配，请勿重复指定");
+            }
+            if (!(gpuCount > 0 || cpuCount > 0)) {
+                throw new Error("不能申请空资源，请指定 GPU 或 CPU 数量");
+            }
+
             const response = await apiService.submitSbatchJob(generatedScript);
             setSubmitStatus({
                 open: true,
@@ -151,13 +182,29 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
                             onChange={handleFormChange}
                         />
                     </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                        <FormControl fullWidth sx={{ minWidth: 180 }} required>
+                            <InputLabel id="task-type-label">任务类型</InputLabel>
+                            <Select
+                                labelId="task-type-label"
+                                id="task_type"
+                                name="task_type"
+                                value={formData.task_type}
+                                onChange={handleFormChange}
+                                label="任务类型"
+                            >
+                                <MenuItem value="run">运行</MenuItem>
+                                <MenuItem value="debug">调试</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
                             required
-                            label="分区"
-                            name="partition"
-                            value={formData.partition}
+                            label="分区号"
+                            name="partition_num"
+                            value={formData.partition_num}
                             onChange={handleFormChange}
                         />
                     </Grid>
@@ -196,7 +243,7 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
-                            label="GPU总数量 (可选)"
+                            label="GPU 总数量 (可选)"
                             name="gpuTotal"
                             type="number"
                             value={formData.gpuTotal}
@@ -206,10 +253,12 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
                     <Grid item xs={12} sm={6}>
                         <TextField
                             fullWidth
-                            label="GPU类型 (可选)"
-                            name="gpuType"
-                            value={formData.gpuType}
+                            label="CPU 总数量 (可选)"
+                            name="cpuTotal"
+                            type="number"
+                            value={formData.cpuTotal}
                             onChange={handleFormChange}
+                            disabled={formData.gpuTotal > 0}
                         />
                     </Grid>
                 </Grid>
