@@ -42,6 +42,8 @@ func NewRouter(cfg *config.Config, tokenStore *store.TokenStore, sessionStore *s
 	apiV1.Use(AuthMiddleware(cfg))
 	{
 		apiV1.GET("/cluster/status", GetClusterStatusHandler(cfg, tokenStore))
+		apiV1.GET("/cluster/status_limit", GetClusterStatusByUserHandler(cfg, tokenStore))
+		apiV1.GET("/cluster/partitions", GetPartitionsHandler(cfg, tokenStore))
 		apiV1.GET("/jobs", GetJobsHandler(cfg, tokenStore))
 		apiV1.GET("/jobs/info", HandleGetAllJobInfoLogs(cfg, tokenStore))
 		jobGroup := apiV1.Group("/job")

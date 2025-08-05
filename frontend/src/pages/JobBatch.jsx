@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     Box,
     Typography,
@@ -51,15 +51,59 @@ function BatchJob() {
     const [formData, setFormData] = useState(initialFormState);
     const [generatedScript, setGeneratedScript] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [partitions, setPartitions] = useState([]);
     const [submitStatus, setSubmitStatus] = useState({
         open: false,
         severity: "success",
         message: "",
     });
 
+    useEffect(() => {
+        const fetchPartitions = async () => {
+            try {
+                const data = await apiService.getAvailablePartitions();
+                if (Array.isArray(data)) {
+                    setPartitions(data);
+                } else {
+                    setPartitions([]);
+                }
+            } catch (error) {
+                console.error("获取分区时出错:", error);
+            }
+        };
+        fetchPartitions();
+    }, []);
+
+    const availablePartitionSuffixes = useMemo(() => {
+        if (!formData.task_type) {
+            return []; // 如果没选任务类型，则没有可用分区
+        }
+
+        let prefix = "";
+        if (formData.task_type === "debug") {
+            prefix = "debug-";
+        } else if (formData.task_type === "run") {
+            // 注意：这里需要将 formData.gpuTotal 转换为数字
+            const gpuCount = parseInt(formData.gpuTotal, 10) || 0;
+            prefix = gpuCount > 0 ? "gpu-" : "cpu-";
+        }
+
+        if (!prefix) {
+            return [];
+        }
+
+        return partitions.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
+    }, [formData.task_type, formData.gpuTotal, partitions]);
+
     const handleFormChange = (event) => {
         const { name, value } = event.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const newFormData = { ...formData, [name]: value };
+
+        // 当任务类型或GPU数量变化时，重置分区选择
+        if (name === "task_type" || name === "gpuTotal") {
+            newFormData.partition_num = "";
+        }
+        setFormData(newFormData);
     };
 
     // 根据表单数据生成脚本
@@ -166,62 +210,7 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
 
     const renderSbatchForm = () => (
         <Box>
-            {/* 分组一：任务配置 */}
-            <Typography variant="h6" gutterBottom>
-                任务配置
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            required
-                            label="任务名称"
-                            name="jobName"
-                            value={formData.jobName}
-                            onChange={handleFormChange}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
-                        <FormControl fullWidth sx={{ minWidth: 180 }} required>
-                            <InputLabel id="task-type-label">任务类型</InputLabel>
-                            <Select
-                                labelId="task-type-label"
-                                id="task_type"
-                                name="task_type"
-                                value={formData.task_type}
-                                onChange={handleFormChange}
-                                label="任务类型"
-                            >
-                                <MenuItem value="run">运行</MenuItem>
-                                <MenuItem value="debug">调试</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            required
-                            label="分区号"
-                            name="partition_num"
-                            value={formData.partition_num}
-                            onChange={handleFormChange}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="最长运行时间 (可选)"
-                            name="runTime"
-                            value={formData.runTime}
-                            onChange={handleFormChange}
-                            helperText="格式: D-HH:MM:SS"
-                        />
-                    </Grid>
-                </Grid>
-            </Paper>
-
-            {/* 分组二：资源配置 */}
+            {/* 分组一：资源配置 */}
             <Typography variant="h6" gutterBottom>
                 资源配置
             </Typography>
@@ -259,6 +248,70 @@ srun --nodes=\${#nodes_array[@]} --ntasks-per-node=${tasksPerNode} ${taskScript 
                             value={formData.cpuTotal}
                             onChange={handleFormChange}
                             disabled={formData.gpuTotal > 0}
+                        />
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* 分组二：任务配置 */}
+            <Typography variant="h6" gutterBottom>
+                任务配置
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            required
+                            label="任务名称"
+                            name="jobName"
+                            value={formData.jobName}
+                            onChange={handleFormChange}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                        <FormControl fullWidth sx={{ minWidth: 180 }} required>
+                            <InputLabel id="task-type-label">任务类型</InputLabel>
+                            <Select
+                                labelId="task-type-label"
+                                id="task_type"
+                                name="task_type"
+                                value={formData.task_type}
+                                onChange={handleFormChange}
+                                label="任务类型"
+                            >
+                                <MenuItem value="run">运行</MenuItem>
+                                <MenuItem value="debug">调试</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth required sx={{ minWidth: 180 }}>
+                            <InputLabel id="partition-num-label">分区</InputLabel>
+                            <Select
+                                labelId="partition-num-label"
+                                name="partition_num"
+                                value={formData.partition_num}
+                                onChange={handleFormChange}
+                                label="分区"
+                                disabled={!formData.task_type || (formData.gpuTotal == 0 && formData.cpuTotal == 0)}
+                            >
+                                {availablePartitionSuffixes.map((suffix) => (
+                                    <MenuItem key={suffix} value={suffix}>
+                                        {suffix}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="最长运行时间 (可选)"
+                            name="runTime"
+                            value={formData.runTime}
+                            onChange={handleFormChange}
+                            helperText="格式: D-HH:MM:SS"
                         />
                     </Grid>
                 </Grid>

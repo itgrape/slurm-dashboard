@@ -53,7 +53,7 @@ function Dashboard() {
     useEffect(() => {
         const fetchAndProcessData = async () => {
             try {
-                const data = await apiService.getClusterStatus();
+                const data = await apiService.getClusterStatusLimit();
 
                 // 过滤掉管理节点
                 const filteredNodes = data.nodes.filter(

@@ -58,13 +58,35 @@ const apiService = {
         }
     },
 
-    // 获取集群状态
+    // 获取整个集群状态
     getClusterStatus: async () => {
         try {
             const response = await api.get("/v1/cluster/status");
             return response;
         } catch (error) {
             console.error("获取集群状态失败:", error);
+            throw error;
+        }
+    },
+
+    // 获取用户可见的集群状态
+    getClusterStatusLimit: async () => {
+        try {
+            const response = await api.get("/v1/cluster/status_limit");
+            return response;
+        } catch (error) {
+            console.error("获取集群状态失败:", error);
+            throw error;
+        }
+    },
+
+    // 获取用户可用分区
+    getAvailablePartitions: async () => {
+        try {
+            const response = await api.get("/v1/cluster/partitions");
+            return response;
+        } catch (error) {
+            console.error("获取可用分区失败:", error);
             throw error;
         }
     },

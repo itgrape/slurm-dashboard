@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     Box,
     Paper,
@@ -33,9 +33,10 @@ function DebugJob() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [token, setToken] = useState("");
+    const [partitions, setPartitions] = useState([]);
 
-    // 组件加载时，从 localStorage 恢复会话列表并获取 token
     useEffect(() => {
+        // 组件加载时，从 localStorage 恢复会话列表并获取 token
         const savedSessions = localStorage.getItem("interactiveSessions");
         if (savedSessions) {
             const parsedSessions = JSON.parse(savedSessions);
@@ -47,14 +48,62 @@ function DebugJob() {
         if (storedToken) {
             setToken(storedToken);
         }
+
+        // 获取所有可用分区
+        const fetchPartitions = async () => {
+            try {
+                const data = await apiService.getAvailablePartitions();
+                if (Array.isArray(data)) {
+                    setPartitions(data);
+                } else {
+                    setPartitions([]);
+                }
+            } catch (error) {
+                setError("获取可用分区失败。请检查API端点和网络连接");
+                console.error("获取分区时出错:", error);
+            }
+        };
+
+        fetchPartitions();
     }, []);
+
+    // 动态计算可用分区后缀
+    const availablePartitionSuffixes = useMemo(() => {
+        if (!formData.task_type) {
+            return []; // 如果没选任务类型，则没有可用分区
+        }
+
+        let prefix = "";
+        if (formData.task_type === "debug") {
+            prefix = "debug-";
+        } else if (formData.task_type === "run") {
+            prefix = formData.gpu_count > 0 ? "gpu-" : "cpu-";
+        }
+
+        if (!prefix) {
+            return [];
+        }
+
+        // 根据前缀过滤并提取后缀
+        return partitions
+            .filter((p) => p.startsWith(prefix))
+            .map((p) => p.substring(prefix.length));
+            
+    }, [formData.task_type, formData.gpu_count, partitions]);
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
+        const newFormData = {
+            ...formData,
             [name]: name === "gpu_count" || name === "cpu_count" ? parseInt(value, 10) || 0 : value,
-        }));
+        };
+
+        // 当任务类型或GPU数量变化时，它们会影响分区的可用列表，因此需要重置分区的选择
+        if (name === "task_type" || name === "gpu_count") {
+            newFormData.partition_num = "";
+        }
+
+        setFormData(newFormData);
     };
 
     const handleSubmit = async (e) => {
@@ -80,7 +129,7 @@ function DebugJob() {
                     suffix = "cpu";
                 }
             }
-            let partition = `${suffix}-${formData.partition_num}`
+            let partition = `${suffix}-${formData.partition_num}`;
 
             // 构造请求数据向后端发送请求
             let payload = {
@@ -88,7 +137,7 @@ function DebugJob() {
                 partition: partition,
                 gpu_count: formData.gpu_count,
                 cpu_count: formData.cpu_count,
-            }
+            };
 
             const response = await apiService.createSallocSession(payload);
             const newSession = {
@@ -160,17 +209,6 @@ function DebugJob() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
-                        <TextField
-                            fullWidth
-                            name="partition_num"
-                            label="分区号"
-                            value={formData.partition_num}
-                            onChange={handleFormChange}
-                            size="small"
-                            required
-                        />
-                    </Grid>
                     <Grid item xs={6} sm={4} md={1}>
                         <TextField
                             fullWidth
@@ -193,6 +231,26 @@ function DebugJob() {
                             size="small"
                             disabled={formData.gpu_count > 0}
                         />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                        <FormControl fullWidth size="small" required sx={{ minWidth: 170 }}>
+                            <InputLabel id="partition-num-label">分区号</InputLabel>
+                            <Select
+                                labelId="partition-num-label"
+                                name="partition_num"
+                                value={formData.partition_num}
+                                onChange={handleFormChange}
+                                label="分区"
+                                // 当没有选择任务类型以及没有指定CPU和GPU时，禁用此下拉框
+                                disabled={!formData.task_type || (formData.gpu_count == 0 && formData.cpu_count == 0)}
+                            >
+                                {availablePartitionSuffixes.map((suffix) => (
+                                    <MenuItem key={suffix} value={suffix}>
+                                        {suffix}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </Grid>
                     <Grid item xs={6} sm={2} md={2}>
                         <Button type="submit" variant="contained" disabled={loading} fullWidth>
