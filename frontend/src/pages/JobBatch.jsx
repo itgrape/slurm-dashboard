@@ -99,6 +99,11 @@ function BatchJob() {
         const { name, value } = event.target;
         const newFormData = { ...formData, [name]: value };
 
+        // 当GPU数量不等于0时，把CPU数量设置为0
+        if (name === "gpu_count" && value !== "0") {
+            newFormData.cpu_count = 0;
+        }
+
         // 当任务类型或GPU数量变化时，重置分区选择
         if (name === "task_type" || name === "gpuTotal") {
             newFormData.partition_num = "";

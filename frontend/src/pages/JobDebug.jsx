@@ -98,6 +98,11 @@ function DebugJob() {
             [name]: name === "gpu_count" || name === "cpu_count" ? parseInt(value, 10) || 0 : value,
         };
 
+        // 当GPU数量不等于0时，把CPU数量设置为0
+        if (name === "gpu_count" && value !== "0") {
+            newFormData.cpu_count = 0;
+        }
+
         // 当任务类型或GPU数量变化时，它们会影响分区的可用列表，因此需要重置分区的选择
         if (name === "task_type" || name === "gpu_count") {
             newFormData.partition_num = "";
@@ -234,7 +239,7 @@ function DebugJob() {
                     </Grid>
                     <Grid item xs={12} sm={6} md={2}>
                         <FormControl fullWidth size="small" required sx={{ minWidth: 170 }}>
-                            <InputLabel id="partition-num-label">分区号</InputLabel>
+                            <InputLabel id="partition-num-label">分区</InputLabel>
                             <Select
                                 labelId="partition-num-label"
                                 name="partition_num"
